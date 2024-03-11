@@ -4,23 +4,23 @@ from docxtpl import InlineImage
 from docx.shared import Cm
 
 
-def build(self, data, sheetList):
+def build(data, sheetList):
         df, contextVariables = importData(data, sheetList[0])
         context = {}
 
         for i, variable in enumerate(contextVariables):
             context[variable] = df[i]
 
-        for T in range(1, len(dataClass) + 1):  # Ensure T starts at 1 and iterates through the length of dataClass
-            tableKey = f'T{T}'  # Construct the key for each table
-            if tableKey in dataClass:  # Check if the key exists in dataClass
-                tableConfig = dataClass[tableKey]  # Access the configuration for the current table
-                # Use the dictionary values correctly with keys
-                tableContext(data, context,
-                                          tableConfig['SheetName'], tableConfig['StartIndex'],
-                                          tableConfig['EndIndex'], tableConfig['coords'],
-                                          tableConfig['TableName']
-                                          )
+        # for T in range(1, len(dataClass) + 1):  # Ensure T starts at 1 and iterates through the length of dataClass
+        #     tableKey = f'T{T}'  # Construct the key for each table
+        #     if tableKey in dataClass:  # Check if the key exists in dataClass
+        #         tableConfig = dataClass[tableKey]  # Access the configuration for the current table
+        #         # Use the dictionary values correctly with keys
+        #         tableContext(data, context,
+        #                                   tableConfig['SheetName'], tableConfig['StartIndex'],
+        #                                   tableConfig['EndIndex'], tableConfig['coords'],
+        #                                   tableConfig['TableName']
+        #                                   )
 
         return context
 
