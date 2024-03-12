@@ -30,7 +30,7 @@ async def generate_document(ctx):
 
     try:
         doc = DocxTemplate(TEMPLATE_PATH)
-        context = build(temp_file_path, sheetList)
+        context = build(temp_file_path, doc, sheetList)
         doc.render(context)
 
         output_stream = io.BytesIO()

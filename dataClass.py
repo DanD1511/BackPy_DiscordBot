@@ -23,7 +23,7 @@ dataClass = {
         'SheetName': '1.2. Relaciones Gen.',
         'StartIndex': 1,
         'EndIndex': 14,
-        'coords': 'E'
+        'coords': 'K'
     },
     'T3': {
         'TableName': 'CL',

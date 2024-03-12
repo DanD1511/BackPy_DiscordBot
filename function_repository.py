@@ -2,25 +2,37 @@ from dataClass import dataClass, sheetList, TableConfig
 import pandas as pd
 from docxtpl import InlineImage
 from docx.shared import Cm
+import matplotlib.pyplot as plt
+import numpy as np
 
 
-def build(data, sheetList):
+def build(data, doc, sheetList):
         df, contextVariables = importData(data, sheetList[0])
         context = {}
 
         for i, variable in enumerate(contextVariables):
             context[variable] = df[i]
 
-        # for T in range(1, len(dataClass) + 1):  # Ensure T starts at 1 and iterates through the length of dataClass
-        #     tableKey = f'T{T}'  # Construct the key for each table
-        #     if tableKey in dataClass:  # Check if the key exists in dataClass
-        #         tableConfig = dataClass[tableKey]  # Access the configuration for the current table
-        #         # Use the dictionary values correctly with keys
-        #         tableContext(data, context,
-        #                                   tableConfig['SheetName'], tableConfig['StartIndex'],
-        #                                   tableConfig['EndIndex'], tableConfig['coords'],
-        #                                   tableConfig['TableName']
-        #                                   )
+        # Generar y procesar gráfico de Generación Diaria
+        chartGenDiaryPath = chartGenDiary(data)  # Se asume que chartGenDiary ahora retorna la ruta del archivo guardado
+        chartGenDiaryImage = pasteChart(doc, chartGenDiaryPath)
+        context['Chart1'] = chartGenDiaryImage
+
+        # Generar y procesar gráfico de Proyección de Generación
+        chartEnProyPath = chartEnProy(data)  # Se asume que chartEnProy ahora retorna la ruta del archivo guardado
+        chartEnProyImage = pasteChart(doc, chartEnProyPath)
+        context['Chart2'] = chartEnProyImage
+
+        for T in range(1, len(dataClass) + 1):  # Ensure T starts at 1 and iterates through the length of dataClass
+            tableKey = f'T{T}'  # Construct the key for each table
+            if tableKey in dataClass:  # Check if the key exists in dataClass
+                tableConfig = dataClass[tableKey]  # Access the configuration for the current table
+                # Use the dictionary values correctly with keys
+                tableContext(data, context,
+                                          tableConfig['SheetName'], tableConfig['StartIndex'],
+                                          tableConfig['EndIndex'], tableConfig['coords'],
+                                          tableConfig['TableName']
+                                          )
 
         return context
 
@@ -63,73 +75,130 @@ def pasteChart(doc_template, chart_image_path):
 def saveChart(image, image_path):
     image.save(image_path)
 
-def validate(template, data, outputDirectory):
-        if not template:
-            messagebox.showerror("Error", "Por favor, selecciona un archivo de plantilla")
-            return False
-
-        if not data:
-            messagebox.showerror("Error", "Por favor, selecciona un archivo de datos")
-
-        if not outputDirectory:
-            messagebox.showerror("Error", "Por favor, selecciona un directorio de salida.")
-            return False
-
-        return True
-
 def importData(data, sheetName): 
-        try:
-            df = pd.read_excel(data, sheet_name=sheetName, header=None)
-            dataFrame = []
-            contextVariables = []
 
-            index = 1
-            indexVariable = 1
-            while index < len(df):
-                dataFrame.append(df.iloc[index, 1])
-                contextVariables.append(df.iloc[index, 0])
-                index += 1
+        df = pd.read_excel(data, sheet_name=sheetName, header=None)
+        dataFrame = []
+        contextVariables = []
 
-            return dataFrame, contextVariables
+        index = 1
+        while index < len(df):
+            dataFrame.append(df.iloc[index, 1])
+            contextVariables.append(df.iloc[index, 0])
+            index += 1
 
-        except Exception as e:
-            messagebox.showerror("Error", f"No se pudo leer el archivo de datos: {e}")
-            return None
+        return dataFrame, contextVariables
+    
+
         
-# def processChart(doc, data, sheetName):
-#         chartImage = ChartExtractor.chartExtractor(data, sheetName)
-#         chartPath = os.path.join('', f"chart_{sheetName}.png")
-#         ImageProcessor.saveChart(chartImage, chartPath)
-#         chart = ImageProcessor.pasteChart(doc, chartPath)
+def processChart(doc, data, sheetName):
+    #TODO
 
-#         return chartPath
+        return chartPath
 
-# TODO igualar la funcionalidad en linux 
+def chartGenDiary(data):
+    dataFrame = pd.read_excel(data, sheet_name='1. Generación diaria', header=None)
+    xAxis = []
+    yAxis = []
 
-# def chartExtractor(data, sheetName):
-#         chartIndex = 0
-#         operation = win32com.client.Dispatch("Excel.Application")
-#         operation.Visible = 0
-#         operation.DisplayAlerts = 0
+    index = 2
+    while index < len(dataFrame) - 3:
+        xAxis.append(str(dataFrame.iloc[index, 1]))
+        yAxis.append(int(dataFrame.iloc[index, 2]))
+        index += 1
 
-#         workbook = operation.Workbooks.Open(data)
-#         sheet = workbook.Worksheets(sheetName)
+    fig, ax = plt.subplots(figsize=(14, 9))
 
-#         chart = None
-#         for x, chart_obj in enumerate(sheet.Shapes):
-#             if x == chartIndex:
-#                 chart = chart_obj
-#                 break
+    normalized_green_color = (146/255, 208/255, 80/255)
+    normalized_green_border_color = (112/255, 173/255, 71/255)
 
-#         if chart:
-#             chart.Copy()
-#             image = ImageGrab.grabclipboard()
-#             workbook.Close(True)
-#             operation.Quit()
-#             return image
+    plt.fill_between(xAxis, yAxis, color=normalized_green_color, alpha=1, zorder=3)
 
-#         workbook.Close(True)
-#         operation.Quit()
-#         return None
+    plt.plot(xAxis, yAxis, color=normalized_green_border_color, linewidth=5, zorder=4)
 
+    plt.title('Generación Diaria de Energía')
+    plt.xlabel('Hora')
+    plt.ylabel('Potencia [kW]')
+
+    tick_positions = range(0, len(xAxis), 4)
+    tick_labels = [xAxis[i] for i in tick_positions]
+    plt.xticks(tick_positions, tick_labels, rotation=45)
+
+    plt.ylim(0, 1300)
+
+    yticks = range(0, 1301, 200)
+    plt.yticks(yticks, [str(i) for i in yticks])
+
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+    plt.gca().set_axisbelow(True)
+
+    plt.grid(True, axis='y', color='lightgrey', linestyle='--', linewidth=0.5)
+
+    plt.tight_layout()
+
+    plt.savefig('Chart1.png')
+    plt.close()
+    return 'Chart1.png'
+
+def chartEnProy(data):
+    sheet_name = '1.1. Proyección de Gen.'
+
+    dataFrame = pd.read_excel(data, sheet_name=sheet_name, header=None)
+
+    Data1 = []
+    Data2 = []
+
+    index = 2
+    while index < 14:
+        Data1.append(int(dataFrame.iloc[index, 2]))
+        index += 1
+
+    index = 17
+    while index < 29:
+        Data2.append(int(dataFrame.iloc[index, 2]))
+        index += 1
+
+    fig, ax1 = plt.subplots(figsize=(14, 9))
+
+    normalized_green_color = (146/255, 208/255, 80/255)
+    normalized_grey_color = (89/255, 89/255, 89/255)
+
+    bar_width = 0.35
+    index = np.arange(len(Data1))
+    bars1 = ax1.bar(index - bar_width/2, Data1, bar_width, color=normalized_green_color, label=f'Generación: {int(dataFrame.iloc[14, 2])}')
+
+    ax1.set_ylabel('[kWh]')
+    ax1.tick_params(axis='y')
+    ax1.set_ylim(0, 250000)
+
+    months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    ax1.set_xticks(index)
+    ax1.set_xticklabels(months)
+
+    ax2 = ax1.twinx()
+    bars2 = ax2.bar(index + bar_width/2, Data2, bar_width, color=normalized_grey_color, label=f'Consumo: {dataFrame.iloc[29, 2]}')
+
+    ax2.set_ylabel('[kWh]')
+    ax2.tick_params(axis='y')
+    ax2.set_ylim(0, 5000)
+
+    for spine in ax1.spines.values():
+        spine.set_visible(False)
+
+    for spine in ax2.spines.values():
+        spine.set_visible(False)
+
+    ax1.grid(True, axis='y', color='lightgrey', linestyle='--', linewidth=0.5)
+    ax1.set_axisbelow(True)
+
+    ax1.legend(loc='upper left')
+    ax2.legend(loc='upper right')
+
+    plt.tight_layout()
+
+    plt.savefig('Chart2.png')
+    plt.close()
+    return 'Chart2.png'
 
