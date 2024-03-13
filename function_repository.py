@@ -171,7 +171,8 @@ def chartEnProy(data):
     ax1.set_ylim(0, 250000)
 
     months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-    ax1.set_xticks(index, labelsize=12)
+    ax1.set_xticks(index)
+    ax1.tick_params(axis='x', labelsize=12)
     ax1.set_xticklabels(months)
 
     ax2 = ax1.twinx()

@@ -1,4 +1,5 @@
 import os
+import warnings
 import discord
 from discord.ext import commands
 from function_repository import build
@@ -13,10 +14,11 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 intents = discord.Intents.default()
 intents.messages = True
 bot = commands.Bot(command_prefix='!', intents=intents)
+warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
 
-TEMPLATE_PATH = 'BotDiscord/Plantilla_OR_Panel640.docx'
+TEMPLATE_PATH = 'Plantilla_OR_Panel640.docx'
 
-@bot.command(name='generateDocument')
+@bot.command(name='OR')
 async def generate_document(ctx):
 
     if not ctx.message.attachments:
