@@ -25,19 +25,19 @@ TEMPLATE_PATHS = {
     '580': 'Plantilla_OR_Panel580.docx',
 }
 
-def is_user_interacting(user_id):
+def isUserInteracting(user_id):
     return userStates.get(user_id, None) is not None
 
 
-def set_user_state(user_id, state):
+def setUserState(user_id, state):
     userStates[user_id] = state
 
 
-def clear_user_state(user_id):
+def clearUserState(user_id):
     if user_id in userStates:
         del userStates[user_id]
 
-async def request_panel_type(ctx):
+async def requestPanelType(ctx):
     await ctx.send("Por favor, indica el tipo de panel (640, 600, 580):")
 
     def check(m):
@@ -50,7 +50,7 @@ async def request_panel_type(ctx):
         await ctx.send("Tiempo de espera agotado. Por favor, intenta el comando nuevamente.")
         return None
 
-async def request_attachment(ctx):
+async def requestAttachment(ctx):
     await ctx.send("Por favor, sube la memoria de cálculo.")
 
     def check(m):
@@ -64,44 +64,44 @@ async def request_attachment(ctx):
         return None
 
 @bot.command(name='OR')
-async def generate_document(ctx):
+async def generateDocument(ctx):
 
     user_id = ctx.author.id
     
-    if is_user_interacting(user_id):
+    if isUserInteracting(user_id):
         await ctx.send("Ya estás realizando una operación. Por favor, espera a que se complete.")
         return
     
-    set_user_state(user_id, "awaiting_panel_type")
+    setUserState(user_id, "awaiting_panel_type")
     await ctx.send("Por favor, indica el tipo de panel (640, 600, 580):")
 
-    panel_type = await request_panel_type(ctx)
-    if panel_type is None:
+    panelType = await requestPanelType(ctx)
+    if panelType is None:
         return
 
-    attachment = await request_attachment(ctx)
+    attachment = await requestAttachment(ctx)
     if attachment is None:
         return
 
-    temp_file_path = 'temp_data.xlsx'
-    await attachment.save(temp_file_path)
+    tempFilePath = 'temp_data.xlsx'
+    await attachment.save(tempFilePath)
     await ctx.send("Espere mientras se genera el documento.")
 
     try:
-        TEMPLATE_PATH = TEMPLATE_PATHS[panel_type]
+        TEMPLATE_PATH = TEMPLATE_PATHS[panelType]
         doc = DocxTemplate(TEMPLATE_PATH)
-        context = build(temp_file_path, doc, sheetList)
+        context = build(tempFilePath, doc, sheetList)
         doc.render(context)
 
-        output_stream = io.BytesIO()
-        doc.save(output_stream)
-        output_stream.seek(0)
+        outputStream = io.BytesIO()
+        doc.save(outputStream)
+        outputStream.seek(0)
 
-        file_name = f"{context['ProjectName']}-INF-ELE-OR.docx"
-        await ctx.send(f"Documento {file_name} generado con éxito.", file=discord.File(fp=output_stream, filename=file_name))
+        fileName = f"{context['ProjectName']}-INF-ELE-OR.docx"
+        await ctx.send(f"Documento {fileName} generado con éxito.", file=discord.File(fp=outputStream, filename=fileName))
     except Exception as e:
         await ctx.send(f"Error al generar el documento: {e}")
     finally:
-        os.remove(temp_file_path)
+        os.remove(tempFilePath)
 
 bot.run(TOKEN)
