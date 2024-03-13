@@ -13,21 +13,18 @@ def build(data, doc, sheetList):
         for i, variable in enumerate(contextVariables):
             context[variable] = df[i]
 
-        # Generar y procesar gráfico de Generación Diaria
-        chartGenDiaryPath = chartGenDiary(data)  # Se asume que chartGenDiary ahora retorna la ruta del archivo guardado
+        chartGenDiaryPath = chartGenDiary(data) 
         chartGenDiaryImage = pasteChart(doc, chartGenDiaryPath)
         context['Chart1'] = chartGenDiaryImage
 
-        # Generar y procesar gráfico de Proyección de Generación
-        chartEnProyPath = chartEnProy(data)  # Se asume que chartEnProy ahora retorna la ruta del archivo guardado
+        chartEnProyPath = chartEnProy(data) 
         chartEnProyImage = pasteChart(doc, chartEnProyPath)
         context['Chart2'] = chartEnProyImage
 
-        for T in range(1, len(dataClass) + 1):  # Ensure T starts at 1 and iterates through the length of dataClass
-            tableKey = f'T{T}'  # Construct the key for each table
-            if tableKey in dataClass:  # Check if the key exists in dataClass
-                tableConfig = dataClass[tableKey]  # Access the configuration for the current table
-                # Use the dictionary values correctly with keys
+        for T in range(1, len(dataClass) + 1): 
+            tableKey = f'T{T}'
+            if tableKey in dataClass:
+                tableConfig = dataClass[tableKey] 
                 tableContext(data, context,
                                           tableConfig['SheetName'], tableConfig['StartIndex'],
                                           tableConfig['EndIndex'], tableConfig['coords'],
@@ -122,12 +119,12 @@ def chartGenDiary(data):
 
     tick_positions = range(0, len(xAxis), 4)
     tick_labels = [xAxis[i] for i in tick_positions]
-    plt.xticks(tick_positions, tick_labels, rotation=45)
+    plt.xticks(tick_positions, tick_labels, rotation=45, fontsize=12)
 
     plt.ylim(0, 1300)
 
     yticks = range(0, 1301, 200)
-    plt.yticks(yticks, [str(i) for i in yticks])
+    plt.yticks(yticks, [str(i) for i in yticks], fontsize=12)
 
     for spine in ax.spines.values():
         spine.set_visible(False)
@@ -170,18 +167,18 @@ def chartEnProy(data):
     bars1 = ax1.bar(index - bar_width/2, Data1, bar_width, color=normalized_green_color, label=f'Generación: {int(dataFrame.iloc[14, 2])}')
 
     ax1.set_ylabel('[kWh]')
-    ax1.tick_params(axis='y')
+    ax1.tick_params(axis='y', labelsize=12)
     ax1.set_ylim(0, 250000)
 
     months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-    ax1.set_xticks(index)
+    ax1.set_xticks(index, labelsize=12)
     ax1.set_xticklabels(months)
 
     ax2 = ax1.twinx()
     bars2 = ax2.bar(index + bar_width/2, Data2, bar_width, color=normalized_grey_color, label=f'Consumo: {dataFrame.iloc[29, 2]}')
 
     ax2.set_ylabel('[kWh]')
-    ax2.tick_params(axis='y')
+    ax2.tick_params(axis='y', labelsize=12)
     ax2.set_ylim(0, 5000)
 
     for spine in ax1.spines.values():
