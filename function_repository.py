@@ -85,13 +85,6 @@ def importData(data, sheetName):
             index += 1
 
         return dataFrame, contextVariables
-    
-
-        
-def processChart(doc, data, sheetName):
-    #TODO
-
-        return chartPath
 
 def chartGenDiary(data):
     dataFrame = pd.read_excel(data, sheet_name='1. Generación diaria', header=None)
