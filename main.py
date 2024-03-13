@@ -1,12 +1,13 @@
-import os
-import warnings
 import discord
 from discord.ext import commands
-from function_repository import build
+import asyncio
+import os
+import warnings
 from docxtpl import DocxTemplate
 import io
-from dataClass import sheetList
 from dotenv import load_dotenv
+from function_repository import build
+from dataClass import sheetList
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -16,21 +17,54 @@ intents.messages = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
 
-TEMPLATE_PATH = 'Plantilla_OR_Panel640.docx'
+TEMPLATE_PATHS = {
+    '640': 'Plantilla_OR_Panel640.docx',
+    '600': 'Plantilla_OR_Panel600.docx',
+    '580': 'Plantilla_OR_Panel580.docx',
+}
+
+async def request_panel_type(ctx):
+    await ctx.send("Por favor, indica el tipo de panel (640, 600, 580):")
+
+    def check(m):
+        return m.author == ctx.author and m.channel == ctx.channel and m.content in TEMPLATE_PATHS
+
+    try:
+        panel_type_msg = await bot.wait_for('message', check=check, timeout=60.0)
+        return panel_type_msg.content
+    except asyncio.TimeoutError:
+        await ctx.send("Tiempo de espera agotado. Por favor, intenta el comando nuevamente.")
+        return None
+
+async def request_attachment(ctx):
+    await ctx.send("Por favor, sube la memoria de cálculo.")
+
+    def check(m):
+        return m.author == ctx.author and m.channel == ctx.channel and m.attachments
+
+    try:
+        attachment_msg = await bot.wait_for('message', check=check, timeout=300.0)  # 5 minutos para subir archivo
+        return attachment_msg.attachments[0]
+    except asyncio.TimeoutError:
+        await ctx.send("Tiempo de espera agotado. Por favor, intenta el comando nuevamente.")
+        return None
 
 @bot.command(name='OR')
 async def generate_document(ctx):
-
-    if not ctx.message.attachments:
-        await ctx.send("Por favor, adjunta un archivo Excel con los datos necesarios.")
+    panel_type = await request_panel_type(ctx)
+    if panel_type is None:
         return
 
-    attachment = ctx.message.attachments[0]
+    attachment = await request_attachment(ctx)
+    if attachment is None:
+        return
+
     temp_file_path = 'temp_data.xlsx'
     await attachment.save(temp_file_path)
-    await ctx.send(f"Espere mientras se genera el documento")
+    await ctx.send("Espere mientras se genera el documento.")
 
     try:
+        TEMPLATE_PATH = TEMPLATE_PATHS[panel_type]
         doc = DocxTemplate(TEMPLATE_PATH)
         context = build(temp_file_path, doc, sheetList)
         doc.render(context)
@@ -41,10 +75,8 @@ async def generate_document(ctx):
 
         file_name = f"{context['ProjectName']}-INF-ELE-OR.docx"
         await ctx.send(f"Documento {file_name} generado con éxito.", file=discord.File(fp=output_stream, filename=file_name))
-    
     except Exception as e:
         await ctx.send(f"Error al generar el documento: {e}")
-
     finally:
         os.remove(temp_file_path)
 
