@@ -17,11 +17,25 @@ intents.messages = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
 
+userStates = {}
+
 TEMPLATE_PATHS = {
     '640': 'Plantilla_OR_Panel640.docx',
     '600': 'Plantilla_OR_Panel600.docx',
     '580': 'Plantilla_OR_Panel580.docx',
 }
+
+def is_user_interacting(user_id):
+    return userStates.get(user_id, None) is not None
+
+
+def set_user_state(user_id, state):
+    userStates[user_id] = state
+
+
+def clear_user_state(user_id):
+    if user_id in userStates:
+        del userStates[user_id]
 
 async def request_panel_type(ctx):
     await ctx.send("Por favor, indica el tipo de panel (640, 600, 580):")
@@ -43,7 +57,7 @@ async def request_attachment(ctx):
         return m.author == ctx.author and m.channel == ctx.channel and m.attachments
 
     try:
-        attachment_msg = await bot.wait_for('message', check=check, timeout=300.0)  # 5 minutos para subir archivo
+        attachment_msg = await bot.wait_for('message', check=check, timeout=300.0)
         return attachment_msg.attachments[0]
     except asyncio.TimeoutError:
         await ctx.send("Tiempo de espera agotado. Por favor, intenta el comando nuevamente.")
@@ -51,6 +65,16 @@ async def request_attachment(ctx):
 
 @bot.command(name='OR')
 async def generate_document(ctx):
+
+    user_id = ctx.author.id
+    
+    if is_user_interacting(user_id):
+        await ctx.send("Ya estás realizando una operación. Por favor, espera a que se complete.")
+        return
+    
+    set_user_state(user_id, "awaiting_panel_type")
+    await ctx.send("Por favor, indica el tipo de panel (640, 600, 580):")
+
     panel_type = await request_panel_type(ctx)
     if panel_type is None:
         return
